@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BWS Crypto Heat Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a1628;--bg2:#0f1f38;--bd:#24365a;--gold:#d4a537;--gold2:#f0c75e;--txt:#e8edf5;--mu:#8fa0bf;--up:#16a34a;--dn:#dc2626;--neu:#2b3a57}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Barlow,system-ui,sans-serif}
+body{min-height:100vh;display:flex;flex-direction:column}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:12px 22px;padding:12px 16px 8px;border-bottom:1px solid var(--bd)}
+h1{font-family:'Bebas Neue',sans-serif;font-weight:400;letter-spacing:2px;font-size:30px;margin:0;color:var(--gold2)}
+h1 span{color:var(--txt)}
+.tabs{display:flex;gap:6px}
+.tab{background:var(--bg2);border:1px solid var(--bd);color:var(--mu);padding:8px 16px;border-radius:8px;font:600 15px Barlow;cursor:pointer}
+.tab.on{background:var(--gold);color:#0a1628;border-color:var(--gold)}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:8px 16px}
+.grp{display:flex;align-items:center;gap:4px}
+.lbl{font:12px 'DM Mono',monospace;color:var(--mu);margin-right:4px;text-transform:uppercase;letter-spacing:.5px}
+.b{background:var(--bg2);border:1px solid var(--bd);color:var(--txt);padding:6px 11px;border-radius:7px;font:500 13px 'DM Mono',monospace;cursor:pointer}
+.b:hover{border-color:var(--gold)}
+.b.on{background:var(--gold);color:#0a1628;border-color:var(--gold)}
+select,input[type=text],input[type=password]{background:var(--bg2);border:1px solid var(--bd);color:var(--txt);padding:7px 10px;border-radius:7px;font:13px 'DM Mono',monospace}
+label.ck{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--mu);cursor:pointer}
+#cust{padding:4px 16px 8px;display:none}
+#cust.show{display:block}
+.addrow{display:flex;gap:8px;flex-wrap:wrap}
+.addrow input{flex:1;min-width:260px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--bd);border-radius:999px;padding:3px 6px 3px 11px;font:12px 'DM Mono',monospace}
+.chip.bad{border-color:var(--dn);color:#fca5a5}
+.chip button{background:none;border:0;color:var(--mu);cursor:pointer;font-size:15px;line-height:1}
+.hint{font-size:12.5px;color:var(--mu);margin-top:6px}
+#stat{padding:0 16px 6px;font:12px 'DM Mono',monospace;color:var(--mu);min-height:18px}
+#stat.err{color:#fca5a5}
+#vp{position:relative;flex:1;margin:0 16px 10px;min-height:460px;height:calc(100vh - 250px);border:1px solid var(--bd);border-radius:10px;overflow:hidden;background:#000;cursor:grab;touch-action:none;user-select:none}
+#vp.drag{cursor:grabbing}
+#world{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+.t{position:absolute;overflow:hidden;border:1px solid #000;font-family:Barlow,'Helvetica Neue',Arial,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.28);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;line-height:1.1}
+.t:hover{outline:2px solid var(--gold2);outline-offset:-2px;z-index:3}
+.t img{position:absolute;opacity:.0}
+.t .s{font-weight:400;white-space:nowrap;letter-spacing:-.5px}
+.t .c{font-weight:500;white-space:nowrap;opacity:.95}
+.t .p{font-weight:500;white-space:nowrap;margin-top:.12em}
+.zc{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px;z-index:5}
+.zc .b{width:36px;height:36px;padding:0;font-size:18px;background:rgba(15,31,56,.92)}
+#zlv{position:absolute;left:10px;top:10px;font:12px 'DM Mono',monospace;color:var(--mu);background:rgba(15,31,56,.85);padding:3px 8px;border-radius:6px;z-index:5}
+#info{position:absolute;left:10px;bottom:10px;z-index:6;background:rgba(10,22,40,.97);border:1px solid var(--gold);border-radius:10px;padding:12px 14px;min-width:250px;max-width:340px;display:none;cursor:default}
+#info h3{margin:0 0 4px;font-family:'Bebas Neue';font-weight:400;font-size:24px;letter-spacing:1px;color:var(--gold2)}
+#info .r{display:flex;justify-content:space-between;font:13px 'DM Mono',monospace;padding:2px 0;gap:14px}
+#info a{color:var(--gold2);font-size:13px;margin-right:12px}
+#info .x{position:absolute;right:8px;top:6px;background:none;border:0;color:var(--mu);font-size:20px;cursor:pointer}
+.up{color:#4ade80}.dn{color:#f87171}
+.legend{display:flex;align-items:center;gap:8px;padding:0 16px 14px;font:11px 'DM Mono',monospace;color:var(--mu)}
+.legend i{display:block;height:10px;width:220px;border-radius:5px}
+.empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mu);text-align:center;padding:30px;font-size:16px}
+.how{font-size:12px;color:var(--mu);padding:0 16px 4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>BWS <span>Crypto Heat Map</span></h1>
+  <div class="tabs">
+    <button class="tab on" id="tabTop" data-view="top">Top 50 by Market Cap</button>
+    <button class="tab" id="tabMy" data-view="my">My Custom Map</button>
+  </div>
+</header>
+
+<div class="bar">
+  <div class="grp"><span class="lbl">Change</span>
+    <button class="b" data-tf="h1">1H</button><button class="b on" data-tf="d1">24H</button><button class="b" data-tf="d7">7D</button><button class="b" data-tf="d30">30D</button>
+  </div>
+  <div class="grp"><span class="lbl">Size by</span>
+    <select id="sizeBy"><option value="mc">Market cap</option><option value="sqrt">Market cap (compressed)</option><option value="vol">24h volume</option><option value="eq">Equal</option></select>
+  </div>
+  <label class="ck" id="stableWrap"><input type="checkbox" id="noStable"> Hide stablecoins</label>
+  <div class="grp"><span class="lbl">Zoom</span>
+    <button class="b" id="zOut" title="Zoom out">−</button><button class="b" id="zIn" title="Zoom in">+</button><button class="b" id="zReset" title="Fit everything on screen">Reset</button>
+  </div>
+  <button class="b" id="refresh">↻ Refresh</button>
+  <details style="font-size:12px;color:var(--mu)"><summary style="cursor:pointer">CoinGecko key (optional)</summary>
+    <input type="password" id="cgKey" placeholder="demo key – helps with rate limits" style="margin-top:6px;width:240px"></details>
+</div>
+
+<div id="cust">
+  <div class="addrow">
+    <input type="text" id="addIn" placeholder="Add tickers and/or contract addresses — e.g.  BTC, SOL, INJ, 0x6982508145454Ce325dDbE47a25d4ec3d2311933" autocomplete="off">
+    <button class="b on" id="addBtn">Add to map</button>
+    <button class="b" id="clearBtn">Clear all</button>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="hint">Tickers come from CoinGecko. Contract addresses (Ethereum/Base/Solana/BSC/Arbitrum etc.) are looked up on GeckoTerminal, so brand-new DEX tokens work too. DEX tokens only have 1H/24H/7D/30D when pool history exists — otherwise the tile shows grey “n/a”. Your list is saved in this browser.</div>
+</div>
+
+<div id="stat"></div>
+<div class="how">Scroll wheel or pinch = zoom · drag = move · double-click a tile = zoom to it · click a tile = details</div>
+<div id="vp">
+  <div id="world"></div>
+  <div id="zlv">1.0×</div>
+  <div class="zc"><button class="b" id="zIn2">+</button><button class="b" id="zOut2">−</button><button class="b" id="zFit">⤢</button></div>
+  <div id="info"></div>
+</div>
+<div class="legend"><span id="lgLo">−8%</span><i id="lgBar"></i><span id="lgHi">+8%</span><span style="margin-left:14px">tile size = <b id="lgSize">market cap</b></span></div>
+
+<script>
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function fmtP(v){if(v==null||isNaN(v))return '—';const a=Math.abs(v);if(a>=1000)return v.toLocaleString(undefined,{maximumFractionDigits:0});if(a>=1)return v.toFixed(2);if(a>=0.01)return v.toFixed(4);if(a>=1e-6)return v.toFixed(7).replace(/0+$/,'');return v.toExponential(2)}
+function fmtB(v){if(v==null||isNaN(v))return '—';const a=Math.abs(v);return '$'+(a>=1e12?(v/1e12).toFixed(2)+'T':a>=1e9?(v/1e9).toFixed(2)+'B':a>=1e6?(v/1e6).toFixed(1)+'M':a>=1e3?(v/1e3).toFixed(0)+'K':v.toFixed(0))}
+const fmtPct=v=>v==null?'n/a':(v>0?'+':'')+v.toFixed(Math.abs(v)<10?2:1)+'%';
+const STABLES=new Set(['usdt','usdc','dai','usde','fdusd','tusd','usdd','pyusd','usds','usdy','busd','frax','usdp','gusd','lusd','susds','susde','usd0','usdtb','buidl','ousg','usdf','rlusd','eusd','usdg','usd1','bfusd','ustb','usdc.e','paxg','xaut']);
+const STABLE_NO_GOLD=s=>STABLES.has(s)&&s!=='paxg'&&s!=='xaut';
+
+/* ---------- state ---------- */
+let view=LS.get('bwshm_view','top'),tf=LS.get('bwshm_tf','d1'),sizeBy=LS.get('bwshm_size','mc'),noStable=LS.get('bwshm_ns',false);
+let mine=LS.get('bwshm_list',[]);if(!Array.isArray(mine))mine=[];
+let topData=[],myData={},myBad={};   // myData[raw] = item
+let Z={k:1,x:0,y:0},tiles=[],busy=false;
+const TFS={h1:{n:'1H',sc:2},d1:{n:'24H',sc:8},d7:{n:'7D',sc:20},d30:{n:'30D',sc:40}};
+const keyQS=()=>{const k=($('#cgKey').value||'').trim();return k?'&x_cg_demo_api_key='+encodeURIComponent(k):''};
+function setStat(t,err){const s=$('#stat');s.textContent=t||'';s.className=err?'err':''}
+
+/* ---------- data: top 50 ---------- */
+async function loadTop(){
+  setStat('Loading top 50 from CoinGecko…');
+  const r=await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=60&page=1&sparkline=false&price_change_percentage=1h,24h,7d,30d'+keyQS());
+  if(!r.ok)throw new Error(r.status===429?'CoinGecko rate limit — wait a minute and press Refresh (or add a free demo key).':'CoinGecko error '+r.status);
+  const j=await r.json();
+  topData=j.map(cgItem);
+}
+const cgItem=c=>({id:c.id,sym:(c.symbol||'').toUpperCase(),name:c.name,img:c.image,price:c.current_price,mc:c.market_cap,vol:c.total_volume,rank:c.market_cap_rank,
+  ch:{h1:c.price_change_percentage_1h_in_currency,d1:c.price_change_percentage_24h_in_currency!=null?c.price_change_percentage_24h_in_currency:c.price_change_percentage_24h,d7:c.price_change_percentage_7d_in_currency,d30:c.price_change_percentage_30d_in_currency},
+  src:'cg',link:'https://www.coingecko.com/en/coins/'+c.id,tv:'https://www.tradingview.com/chart/?symbol='+encodeURIComponent((c.symbol||'').toUpperCase()+'USD')});
+
+/* ---------- data: custom ---------- */
+const isAddr=s=>/^0x[a-fA-F0-9]{40}$/.test(s)||/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s);
+async function resolveTicker(raw){
+  const q=raw.replace(/^\$/,'').toLowerCase();
+  let r=await fetch('https://api.coingecko.com/api/v3/search?query='+encodeURIComponent(q)+keyQS());
+  if(!r.ok)throw new Error('search '+r.status);
+  const j=await r.json(),cs=(j.coins||[]).filter(c=>(c.symbol||'').toLowerCase()===q||(c.id||'')===q||(c.name||'').toLowerCase()===q);
+  if(!cs.length)return null;
+  cs.sort((a,b)=>(a.market_cap_rank||1e9)-(b.market_cap_rank||1e9));
+  r=await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids='+encodeURIComponent(cs[0].id)+'&price_change_percentage=1h,24h,7d,30d'+keyQS());
+  if(!r.ok)throw new Error('markets '+r.status);
+  const m=await r.json();return m[0]?cgItem(m[0]):null;
+}
+async function resolveAddr(raw){
+  const r=await fetch('https://api.geckoterminal.com/api/v2/search/pools?query='+encodeURIComponent(raw)+'&page=1');
+  if(!r.ok)throw new Error('GeckoTerminal '+r.status);
+  const j=await r.json(),pools=j.data||[];if(!pools.length)return null;
+  const low=raw.toLowerCase(),baseAddr=p=>{const id=(p.relationships&&p.relationships.base_token&&p.relationships.base_token.data&&p.relationships.base_token.data.id)||'';return id.split('_').slice(1).join('_').toLowerCase()};
+  let c=pools.filter(p=>baseAddr(p)===low);if(!c.length)c=pools;
+  c.sort((a,b)=>(+b.attributes.reserve_in_usd||0)-(+a.attributes.reserve_in_usd||0));
+  const p=c[0],at=p.attributes,net=p.id.split('_')[0],pc=at.price_change_percentage||{};
+  const it={id:raw,sym:(at.name||'?').split(' / ')[0].toUpperCase().slice(0,12),name:at.name,img:null,price:+at.base_token_price_usd,
+    mc:+at.market_cap_usd||+at.fdv_usd||null,vol:+(at.volume_usd&&at.volume_usd.h24)||null,rank:null,
+    ch:{h1:pc.h1!=null?+pc.h1:null,d1:pc.h24!=null?+pc.h24:null,d7:null,d30:null},src:'gt',net,
+    link:`https://www.geckoterminal.com/${net}/pools/${at.address}`,tv:null};
+  // 7d / 30d from daily candles of the pool
+  try{
+    await sleep(400);
+    const o=await fetch(`https://api.geckoterminal.com/api/v2/networks/${net}/pools/${at.address}/ohlcv/day?aggregate=1&limit=31&currency=usd`);
+    if(o.ok){const l=((await o.json()).data.attributes.ohlcv_list||[]).sort((a,b)=>a[0]-b[0]),last=l.length?l[l.length-1][4]:null;
+      const back=n=>l.length>n?l[l.length-1-n][4]:null,pct=(n)=>{const b=back(n);return b&&last?(last/b-1)*100:null};
+      it.ch.d7=pct(7);it.ch.d30=l.length>=31?pct(30):null}
+  }catch(e){}
+  return it;
+}
+async function resolveOne(raw){return isAddr(raw)?resolveAddr(raw):resolveTicker(raw)}
+async function loadMine(force){
+  const todo=mine.filter(x=>force||!myData[x]);
+  for(let i=0;i<todo.length;i++){
+    const raw=todo[i];setStat(`Looking up ${raw.length>14?raw.slice(0,6)+'…'+raw.slice(-4):raw} (${i+1}/${todo.length})…`);
+    try{const it=await resolveOne(raw);if(it){myData[raw]=it;delete myBad[raw]}else{myBad[raw]='not found';delete myData[raw]}}
+    catch(e){myBad[raw]=String(e.message||e);}
+    renderChips();render();
+    if(i<todo.length-1)await sleep(isAddr(raw)?900:350);
+  }
+}
+
+/* ---------- treemap ---------- */
+function squarify(items,x,y,w,h){
+  const out=[];let rest=items.slice();
+  const worst=(row,side)=>{const s=row.reduce((a,b)=>a+b.a,0),mx=Math.max(...row.map(r=>r.a)),mn=Math.min(...row.map(r=>r.a));return Math.max(side*side*mx/(s*s),s*s/(side*side*mn))};
+  while(rest.length){
+    const side=Math.min(w,h);let row=[rest[0]],i=1;
+    while(i<rest.length&&worst(row.concat(rest[i]),side)<=worst(row,side)){row.push(rest[i]);i++}
+    const s=row.reduce((a,b)=>a+b.a,0);
+    if(w>=h){const rw=s/h;let yy=y;row.forEach(r=>{const rh=r.a/rw;out.push({it:r.it,x,y:yy,w:rw,h:rh});yy+=rh});x+=rw;w-=rw}
+    else{const rh=s/w;let xx=x;row.forEach(r=>{const rw=r.a/rh;out.push({it:r.it,x:xx,y,w:rw,h:rh});xx+=rw});y+=rh;h-=rh}
+    rest=rest.slice(row.length);
+  }
+  return out;
+}
+const lerp=(a,b,t)=>a+(b-a)*t;
+function colorFor(p){
+  if(p==null)return '#6f7d93';
+  const t=Math.min(1,Math.abs(p)/TFS[tf].sc),a=Math.pow(t,0.75);
+  const lo=p>=0?[124,195,131]:[239,116,112],hi=p>=0?[56,120,64]:[200,48,52];   // Coin360-style: light = small move, deep = big move
+  return `rgb(${lo.map((v,k)=>Math.round(lerp(v,hi[k],a))).join(',')})`;
+}
+function list(){
+  let arr=view==='top'?topData.slice(0,60):mine.map(r=>myData[r]).filter(Boolean);
+  if(view==='top'){if(noStable)arr=arr.filter(c=>!STABLE_NO_GOLD(c.sym.toLowerCase()));arr=arr.slice(0,50)}
+  return arr;
+}
+function weight(it,fallback){
+  let v=sizeBy==='vol'?it.vol:it.mc;
+  if(sizeBy==='eq')return 1;
+  if(!(v>0))v=it.mc>0?it.mc:(it.vol>0?it.vol:fallback);
+  return sizeBy==='sqrt'?Math.sqrt(v):v;
+}
+function render(){
+  const vp=$('#vp'),world=$('#world'),W=vp.clientWidth,H=vp.clientHeight;
+  $('#lgSize').textContent={mc:'market cap',sqrt:'market cap (compressed)',vol:'24h volume',eq:'equal'}[sizeBy];
+  $('#lgLo').textContent='−'+TFS[tf].sc+'%';$('#lgHi').textContent='+'+TFS[tf].sc+'%';
+  $('#lgBar').style.background=`linear-gradient(90deg,${colorFor(-TFS[tf].sc)},${colorFor(-0.01)} 49%,${colorFor(0.01)} 51%,${colorFor(TFS[tf].sc)})`;
+  world.style.width=W+'px';world.style.height=H+'px';world.innerHTML='';tiles=[];
+  const arr=list();
+  if(!arr.length){world.innerHTML=`<div class="empty" style="width:${W}px;height:${H}px">${view==='my'?'Add some tickers or contract addresses above to build your own heat map.':'No data yet.'}</div>`;return}
+  const pos=arr.map(it=>weight(it,0)).filter(v=>v>0),fb=pos.length?Math.min(...pos):1;
+  const ws=arr.map(it=>({it,v:Math.max(weight(it,fb),fb*0.05)})).sort((a,b)=>b.v-a.v);
+  const tot=ws.reduce((a,b)=>a+b.v,0);
+  const lay=squarify(ws.map(o=>({it:o.it,a:o.v/tot*W*H})),0,0,W,H);
+  lay.forEach(l=>{
+    const it=l.it,p=it.ch[tf],d=document.createElement('div');d.className='t';
+    d.style.cssText=`left:${l.x}px;top:${l.y}px;width:${l.w}px;height:${l.h}px;background:${colorFor(p)}`;
+    const len=Math.max(2,it.sym.length),fs=Math.max(4,Math.min(l.w/(len*0.74),l.h/3.3,150));
+    const showP=l.h>fs*2.1&&it.price!=null,showC=l.h>fs*1.55,arrow=p==null?'':`<span style="font-size:.65em;vertical-align:.1em">${p>=0?'▲':'▼'}</span> `;
+    d.innerHTML=`<div class="s" style="font-size:${fs}px">${esc(it.sym)}</div>${showP?`<div class="p" style="font-size:${fs*0.42}px">$${fmtP(it.price)}</div>`:''}${showC?`<div class="c" style="font-size:${fs*0.3}px">${arrow}${fmtPct(p)}</div>`:''}`;
+    d._fs=fs;d._it=it;world.appendChild(d);tiles.push({el:d,l,it,fs});
+    d.onclick=e=>{if(moved)return;e.stopPropagation();showInfo(it)};
+    d.ondblclick=e=>{e.stopPropagation();zoomTo(l)};
+  });
+  applyZ();
+}
+function vis(){tiles.forEach(t=>{const on=t.fs*Z.k>=7.5;t.el.style.color=on?'#fff':'transparent'})}
+
+/* ---------- zoom / pan ---------- */
+function applyZ(){
+  const vp=$('#vp'),W=vp.clientWidth,H=vp.clientHeight;
+  Z.k=Math.max(1,Math.min(40,Z.k));
+  Z.x=Math.min(0,Math.max(W-W*Z.k,Z.x));Z.y=Math.min(0,Math.max(H-H*Z.k,Z.y));
+  $('#world').style.transform=`translate(${Z.x}px,${Z.y}px) scale(${Z.k})`;
+  $('#zlv').textContent=Z.k.toFixed(1)+'×';vis();
+}
+function zoomAt(f,cx,cy){const nk=Math.max(1,Math.min(40,Z.k*f)),r=nk/Z.k;Z.x=cx-(cx-Z.x)*r;Z.y=cy-(cy-Z.y)*r;Z.k=nk;applyZ()}
+function zoomBtn(f){const vp=$('#vp');zoomAt(f,vp.clientWidth/2,vp.clientHeight/2)}
+function zoomTo(l){const vp=$('#vp'),W=vp.clientWidth,H=vp.clientHeight,k=Math.min(40,Math.min(W/l.w,H/l.h)*0.92);Z.k=k;Z.x=W/2-(l.x+l.w/2)*k;Z.y=H/2-(l.y+l.h/2)*k;
+  const w=$('#world');w.style.transition='transform .35s';applyZ();setTimeout(()=>w.style.transition='',380)}
+function resetZ(){Z={k:1,x:0,y:0};const w=$('#world');w.style.transition='transform .3s';applyZ();setTimeout(()=>w.style.transition='',320)}
+let moved=false;
+(function(){
+  const vp=$('#vp'),ptr=new Map();let last=null,pinch=null;
+  vp.addEventListener('wheel',e=>{e.preventDefault();const r=vp.getBoundingClientRect();zoomAt(Math.exp(-e.deltaY*0.0016),e.clientX-r.left,e.clientY-r.top)},{passive:false});
+  vp.addEventListener('pointerdown',e=>{if(e.target.closest('.zc,#info'))return;ptr.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=false;last={x:e.clientX,y:e.clientY};
+    if(ptr.size===2){const [a,b]=[...ptr.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y)}}});
+  vp.addEventListener('pointermove',e=>{
+    if(!ptr.has(e.pointerId))return;ptr.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(ptr.size===2&&pinch){const [a,b]=[...ptr.values()],d=Math.hypot(a.x-b.x,a.y-b.y),r=vp.getBoundingClientRect();zoomAt(d/pinch.d,(a.x+b.x)/2-r.left,(a.y+b.y)/2-r.top);pinch.d=d;moved=true;return}
+    const dx=e.clientX-last.x,dy=e.clientY-last.y;
+    if(Math.abs(dx)+Math.abs(dy)>3||moved){if(!moved){try{vp.setPointerCapture(e.pointerId)}catch(_){}}moved=true;vp.classList.add('drag');Z.x+=dx;Z.y+=dy;last={x:e.clientX,y:e.clientY};applyZ()}
+  });
+  const up=e=>{ptr.delete(e.pointerId);pinch=null;vp.classList.remove('drag');setTimeout(()=>{moved=false},0)};
+  vp.addEventListener('pointerup',up);vp.addEventListener('pointercancel',up);
+  vp.addEventListener('click',e=>{if(!e.target.closest('.t')&&!e.target.closest('#info'))$('#info').style.display='none'});
+})();
+
+/* ---------- details ---------- */
+function showInfo(it){
+  const i=$('#info'),row=(a,b,c)=>`<div class="r"><span style="color:var(--mu)">${a}</span><span class="${c||''}">${b}</span></div>`;
+  const cl=v=>v==null?'':v>=0?'up':'dn';
+  i.innerHTML=`<button class="x" onclick="this.parentNode.style.display='none'">×</button><h3>${esc(it.sym)} <span style="font:14px Barlow;color:var(--mu)">${esc(it.name||'')}</span></h3>
+    ${row('Price','$'+fmtP(it.price))}${row('Market cap',fmtB(it.mc))}${row('24h volume',fmtB(it.vol))}${it.rank?row('Rank','#'+it.rank):''}
+    ${row('1H',fmtPct(it.ch.h1),cl(it.ch.h1))}${row('24H',fmtPct(it.ch.d1),cl(it.ch.d1))}${row('7D',fmtPct(it.ch.d7),cl(it.ch.d7))}${row('30D',fmtPct(it.ch.d30),cl(it.ch.d30))}
+    <div style="margin-top:8px"><a href="${it.link}" target="_blank" rel="noopener">${it.src==='gt'?'GeckoTerminal ↗':'CoinGecko ↗'}</a>${it.tv?`<a href="${it.tv}" target="_blank" rel="noopener">TradingView ↗</a>`:''}</div>`;
+  i.style.display='block';
+}
+
+/* ---------- custom list UI ---------- */
+function renderChips(){
+  $('#chips').innerHTML=mine.map((r,i)=>{const it=myData[r],bad=myBad[r],lab=it?it.sym+(isAddr(r)?' · '+r.slice(0,6)+'…'+r.slice(-4):''):(isAddr(r)?r.slice(0,6)+'…'+r.slice(-4):r.toUpperCase());
+    return `<span class="chip ${bad?'bad':''}" title="${esc(bad||r)}">${esc(lab)}${bad?' ✕ '+esc(bad):''}<button data-rm="${i}" title="Remove">×</button></span>`}).join('');
+}
+function addItems(){
+  const raw=$('#addIn').value.split(/[\s,;]+/).map(s=>s.trim()).filter(Boolean);
+  let n=0;raw.forEach(r=>{const key=isAddr(r)?r:r.replace(/^\$/,'').toLowerCase();if(!mine.some(m=>m.toLowerCase()===key.toLowerCase())){mine.push(key);n++}});
+  $('#addIn').value='';LS.set('bwshm_list',mine);renderChips();
+  if(n)run(()=>loadMine(false));
+}
+
+/* ---------- wiring ---------- */
+function syncUI(){
+  $$('.tab').forEach(b=>b.classList.toggle('on',b.dataset.view===view));
+  $$('[data-tf]').forEach(b=>b.classList.toggle('on',b.dataset.tf===tf));
+  $('#sizeBy').value=sizeBy;$('#noStable').checked=!!noStable;
+  $('#cust').classList.toggle('show',view==='my');$('#stableWrap').style.display=view==='top'?'':'none';
+}
+async function run(fn){
+  if(busy)return;busy=true;
+  try{await fn();setStat((view==='top'?'Top 50 by market cap':'My custom map')+' · updated '+new Date().toLocaleTimeString()+(view==='my'&&mine.some(r=>myBad[r])?' · some entries could not be found (red chips)':''))}
+  catch(e){setStat(String(e.message||e),true)}
+  busy=false;renderChips();render();
+}
+function load(force){return view==='top'?run(loadTop):run(()=>loadMine(force))}
+$$('.tab').forEach(b=>b.onclick=()=>{view=b.dataset.view;LS.set('bwshm_view',view);Z={k:1,x:0,y:0};$('#info').style.display='none';syncUI();render();if(view==='top'&&!topData.length)load();else if(view==='my')load(false)});
+$$('[data-tf]').forEach(b=>b.onclick=()=>{tf=b.dataset.tf;LS.set('bwshm_tf',tf);syncUI();render()});
+$('#sizeBy').onchange=e=>{sizeBy=e.target.value;LS.set('bwshm_size',sizeBy);render()};
+$('#noStable').onchange=e=>{noStable=e.target.checked;LS.set('bwshm_ns',noStable);render()};
+$('#zIn').onclick=$('#zIn2').onclick=()=>zoomBtn(1.6);$('#zOut').onclick=$('#zOut2').onclick=()=>zoomBtn(1/1.6);$('#zReset').onclick=$('#zFit').onclick=resetZ;
+$('#refresh').onclick=()=>load(true);
+$('#addBtn').onclick=addItems;$('#addIn').onkeydown=e=>{if(e.key==='Enter')addItems()};
+$('#clearBtn').onclick=()=>{mine=[];myData={};myBad={};LS.set('bwshm_list',mine);renderChips();render()};
+$('#chips').onclick=e=>{const b=e.target.closest('[data-rm]');if(!b)return;const r=mine.splice(+b.dataset.rm,1)[0];delete myData[r];delete myBad[r];LS.set('bwshm_list',mine);renderChips();render()};
+$('#cgKey').value=LS.get('bwshm_key','');$('#cgKey').onchange=e=>LS.set('bwshm_key',e.target.value.trim());
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{render()},150)});
+setInterval(()=>{if(!document.hidden&&!busy&&view==='top')load()},120000);
+syncUI();renderChips();load();
+</script>
+</body>
+</html>
